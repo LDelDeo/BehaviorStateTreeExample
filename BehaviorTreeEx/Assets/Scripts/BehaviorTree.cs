@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections;
+using TMPro;
+using UnityEngine.UI;
 
 public class BehaviorTree : MonoBehaviour
 {
@@ -9,12 +11,15 @@ public class BehaviorTree : MonoBehaviour
     public int energy;
     public int age;
     public int speed;
+    public bool isReplenishing = false;
 
     [Header("Max Values")]
     private int maxHunger = 100;
     private int maxThirst = 100;
     private int maxEnergy = 100;
     private int maxAge = 15;
+    private int startingAge = 1;
+    private int startingSpeed = 15;
 
     [Header("Interactables")]
     private GameObject foodSource;
@@ -22,44 +27,104 @@ public class BehaviorTree : MonoBehaviour
     private GameObject home;
     private GameObject field;
 
+    [Header("Text & Bars")]
+    public TMP_Text[] TMP_Values;
+    public Image[] Life_Bars;
+
     public enum Behaviors
     {
-        Idle, Wandering, Hungry, Thirsty, Asleep
+        Idle, Hungry, Thirsty, Asleep, Dead
     }
 
     public Behaviors currentBehavior;
 
     void Start()
     {
-        //Find Transforms
+        FindTransforms(); //Positions of Interactables
+        DefaultValues(); //Starting Values
+        BeginLife(); //Coroutines
+    }
+
+    private void FindTransforms()
+    {
         foodSource = GameObject.Find("FoodSource");
         waterSource = GameObject.Find("WaterSource");
         home = GameObject.Find("Bed");
         field = GameObject.Find("Field");
+    }
 
-        //Set Values to Default
+    private void DefaultValues()
+    {
         hunger = maxHunger;
         thirst = maxThirst;
         energy = maxEnergy;
-        speed = 15;
-        age = 1;
+        speed = startingSpeed;
+        age = startingAge;
+    }
 
+    private void BeginLife()
+    {
         StartCoroutine(GainAge());
         StartCoroutine(DepleteHunger());
         StartCoroutine(DepleteThirst());
+        StartCoroutine(DepleteEnergy());
     }
 
     void Update()
     {
-        //Behaviors
-        BehaviorTreeFunc();
+        BehaviorTreeFunc(); //Behaviors
+        PriorityList(); //Priority of Needs
 
-        //Managements
-        AgeManagement();
-        HungerManagement();
-        ThirstManagement();
-        EnergyManagement();
-        
+        TextValues(); //TMP Text
+        LifeBars(); //Var Bars
+
+        AgeManagement(); //Life Manager
+    }
+
+    private void TextValues()
+    {
+        TMP_Values[0].text = "Hunger " + hunger;
+        TMP_Values[1].text = "Thirst " + thirst;
+        TMP_Values[2].text = "Energy " + energy;
+        TMP_Values[3].text = "Age " + age;
+        TMP_Values[4].text = "Speed " + speed;
+        TMP_Values[5].text = "State " + currentBehavior;
+    }
+
+    private void LifeBars()
+    {
+        Life_Bars[0].fillAmount = (float)hunger / maxHunger;
+        Life_Bars[1].fillAmount = (float)thirst / maxThirst;
+        Life_Bars[2].fillAmount = (float)energy / maxEnergy;
+        Life_Bars[3].fillAmount = (float)age / maxAge;
+        Life_Bars[4].fillAmount = (float)speed / startingSpeed;
+        Life_Bars[5].fillAmount = 1;
+    }
+
+    private void PriorityList()
+    {
+        if (currentBehavior == Behaviors.Dead || isReplenishing) return;
+
+        if (hunger <= maxHunger / 1.5f) //Below or Equal to 66.6%
+        {
+            currentBehavior = Behaviors.Hungry;
+        }
+        else if (thirst <= maxThirst / 2) //Below or Equal to 50%
+        {
+            currentBehavior = Behaviors.Thirsty;
+        }
+        else if (energy <= maxEnergy / 3f) //Below or Equal to 33.3%
+        {
+            currentBehavior = Behaviors.Asleep;
+        }
+        else if (age < maxAge)
+        {
+            currentBehavior = Behaviors.Idle;
+        }
+        else
+        {
+            currentBehavior = Behaviors.Dead;
+        }
     }
 
     //Movement
@@ -70,6 +135,12 @@ public class BehaviorTree : MonoBehaviour
         transform.position = new Vector3(newPos.x, newPos.y, transform.position.z);
     }
 
+    //Collision
+    private bool IsTouching(GameObject interactable)
+    {
+        return Vector3.Distance(transform.position, interactable.transform.position) < 0.5f;
+    }
+
     private void BehaviorTreeFunc()
     {
         switch (currentBehavior)
@@ -77,28 +148,29 @@ public class BehaviorTree : MonoBehaviour
             case Behaviors.Idle:
                 MoveAnimal(field.transform.position);
                 break;
-            case Behaviors.Wandering:
-                break;
             case Behaviors.Hungry:
                 MoveAnimal(foodSource.transform.position);
-                if (hunger != maxHunger)
-                {
-                    StartCoroutine(AddHunger());
-                }
+                if (!isReplenishing && hunger != maxHunger && IsTouching(foodSource)) { StartCoroutine(AddHunger()); }
                 break;
             case Behaviors.Thirsty:
                 MoveAnimal(waterSource.transform.position);
-                if (thirst != maxThirst)
-                {
-                    StartCoroutine(AddThirst());
-                }
+                if (!isReplenishing && thirst != maxThirst && IsTouching(waterSource)) { StartCoroutine(AddThirst()); }
                 break;
             case Behaviors.Asleep:
                 MoveAnimal(home.transform.position);
-                if (energy != maxThirst)
-                {
-                    StartCoroutine(AddEnergy());
-                }
+                if (!isReplenishing && energy != maxEnergy && IsTouching(home)) { StartCoroutine(AddEnergy()); }
+                break;
+            case Behaviors.Dead:
+                hunger = 0;
+                thirst = 0;
+                energy = 0;
+                age = 15;
+                speed = 0;
+
+                TextValues();
+                LifeBars();
+
+                Time.timeScale = 0f; //End Simulation
                 break;
         }
     }
@@ -110,28 +182,23 @@ public class BehaviorTree : MonoBehaviour
         int hungerLoss = 10;
 
         yield return new WaitForSeconds(Interval);
-        hunger = hunger - hungerLoss;
+        hunger -= hungerLoss;
+        hunger = Mathf.Clamp(hunger, 0, maxHunger);
 
         StartCoroutine(DepleteHunger());
     }
 
     private IEnumerator AddHunger()
     {
-        yield return new WaitForSeconds(2f);
+        isReplenishing = true;
+        yield return new WaitForSeconds(3f);
         hunger = maxHunger;
 
         if (hunger == maxHunger)
         {
             currentBehavior = Behaviors.Idle;
         }
-    }
-
-    private void HungerManagement()
-    {
-        if (hunger <= maxHunger / 1.5f && currentBehavior == Behaviors.Idle)
-        {
-            currentBehavior = Behaviors.Hungry;    
-        }
+        isReplenishing = false;
     }
 
     //Thirsty
@@ -141,28 +208,23 @@ public class BehaviorTree : MonoBehaviour
         int thirstLoss = 10;
 
         yield return new WaitForSeconds(Interval);
-        thirst = thirst - thirstLoss;
+        thirst -= thirstLoss;
+        thirst = Mathf.Clamp(thirst, 0, maxThirst);
 
         StartCoroutine(DepleteThirst());
     }
 
     private IEnumerator AddThirst()
     {
+        isReplenishing = true;
         yield return new WaitForSeconds(2f);
         thirst = maxThirst;
-
+        
         if (thirst == maxThirst)
         {
             currentBehavior = Behaviors.Idle;
         }
-    }
-
-    private void ThirstManagement()
-    {
-        if (thirst <= maxThirst / 2 && currentBehavior == Behaviors.Idle)
-        {
-            currentBehavior = Behaviors.Thirsty;
-        }
+        isReplenishing = false;
     }
 
     //Energy
@@ -172,13 +234,15 @@ public class BehaviorTree : MonoBehaviour
         int energyLoss = 10;
 
         yield return new WaitForSeconds(Interval);
-        energy = energy - energyLoss;
+        energy -= energyLoss;
+        energy = Mathf.Clamp(energy, 0, maxEnergy);
 
         StartCoroutine(DepleteEnergy());
     }
 
     private IEnumerator AddEnergy()
     {
+        isReplenishing = true;
         yield return new WaitForSeconds(8f);
         energy = maxEnergy;
 
@@ -186,14 +250,7 @@ public class BehaviorTree : MonoBehaviour
         {
             currentBehavior = Behaviors.Idle;
         }
-    }
-
-    private void EnergyManagement()
-    {
-        if (energy <= maxEnergy / 1.25f && currentBehavior == Behaviors.Idle)
-        {
-            currentBehavior = Behaviors.Asleep;    
-        }
+        isReplenishing = false;
     }
 
     //Aging 
@@ -206,13 +263,10 @@ public class BehaviorTree : MonoBehaviour
 
     private void AgeManagement()
     {
-        speed = 20 - age;
+        speed = startingSpeed - age;
         if (age >= maxAge)
         {
-            Destroy(gameObject);
-            //Die of Old Age Screen
+            currentBehavior = Behaviors.Dead;
         }
     }
-
-
 }
