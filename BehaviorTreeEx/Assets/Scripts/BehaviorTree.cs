@@ -36,6 +36,11 @@ public class BehaviorTree : MonoBehaviour
     public TMP_Text[] TMP_Values;
     public Image[] Life_Bars;
 
+    [Header("Animal Apperance")]
+    private SpriteRenderer animalImage;
+    public Sprite aliveApperance;
+    public Sprite deadApperance;
+
     public enum Behaviors
     {
         Idle, Hungry, Thirsty, Asleep, Shelter, Dead
@@ -46,8 +51,15 @@ public class BehaviorTree : MonoBehaviour
     void Start()
     {
         FindTransforms(); //Positions of Interactables
+        SetApperance(); //Set Apperance of Animal
         DefaultValues(); //Starting Values
         BeginLife(); //Coroutines
+    }
+
+    private void SetApperance()
+    {
+        animalImage = GetComponent<SpriteRenderer>();
+        animalImage.sprite = aliveApperance;
     }
 
     private void FindTransforms()
@@ -56,7 +68,7 @@ public class BehaviorTree : MonoBehaviour
         waterSource = GameObject.Find("WaterSource");
         home = GameObject.Find("Bed");
         field = GameObject.Find("Field");
-        enemy = GameObject.Find("Enemy"); 
+        enemy = GameObject.Find("Enemy");
         fort = GameObject.Find("Fort");
     }
 
@@ -182,6 +194,8 @@ public class BehaviorTree : MonoBehaviour
                 energy = 0;
                 age = 15;
                 speed = 0;
+
+                animalImage.sprite = deadApperance;
 
                 TextValues();
                 LifeBars();
