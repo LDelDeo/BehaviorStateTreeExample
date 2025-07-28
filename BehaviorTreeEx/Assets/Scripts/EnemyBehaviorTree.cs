@@ -1,54 +1,67 @@
 using UnityEngine;
 using System.Collections;
 using TMPro;
-using UnityEngine.UI;
-using static UnityEngine.EventSystems.EventTrigger;
-using Unity.VisualScripting;
-using UnityEngine.InputSystem.EnhancedTouch;
 
 public class EnemyBehaviorTree : MonoBehaviour
 {
+    [Header("Scripts")]
     private BehaviorTree behaviorTreeScript;
-    public GameObject animal;
+
+    [Header("Prey")]
+    private GameObject animal;
+
+    [Header("Coroutines")]
     private Coroutine activeCoroutine;
+
+    [Header("Text")]
+    public TMP_Text currentStateText;
+
     public enum Behaviors
     {
-        Idle, Chase , Feast, Retreat
+        Idle, Chase, Feast, Retreat
     }
 
     public Behaviors currentBehavior;
 
     void Start()
     {
-        behaviorTreeScript = animal.GetComponent<BehaviorTree>();
+        FindObjects(); //Grabs Components Upon Start
+    }
 
+    private void FindObjects()
+    {
+        animal = GameObject.Find("Animal");
+        behaviorTreeScript = animal.GetComponent<BehaviorTree>();
     }
 
     void Update()
     {
-        BehaviorTreeFunc();
+        if (activeCoroutine == null) { BehaviorTreeFunc(); } //If there is no Coroutine Active, Activate one based on Behavior State
+
+        CurrentStateOfBear(); //Updates the Current State/Behavior Text of the Bear
     }
+
+    private void CurrentStateOfBear()
+    {
+        currentStateText.text = "" + currentBehavior;
+    }
+
     private void BehaviorTreeFunc()
     {
-        if (activeCoroutine != null) return;
-
         switch (currentBehavior)
         {
             case Behaviors.Idle:
-                StartCoroutine(DepleteHunger());
+                activeCoroutine = StartCoroutine(BearIsHungry());
                 break;
             case Behaviors.Chase:
-                StartCoroutine(Follow());
+                activeCoroutine = StartCoroutine(Follow());
                 break;
-            
             case Behaviors.Feast:
-               HubertEats();
+                HerbertEats();
                 break;
             case Behaviors.Retreat:
-                StartCoroutine(Exit());
+                activeCoroutine = StartCoroutine(Exit());
                 break;
-           
-          
         }
     }
 
@@ -57,20 +70,22 @@ public class EnemyBehaviorTree : MonoBehaviour
         Vector3 retreatPos = animal.transform.position + Vector3.right * 10f;
         float retreatDuration = 2f;
         float retreatTimer = 0f;
-        Vector3 startPos = this.gameObject.transform.position;
+        Vector3 startPos = this.transform.position;
 
         while (retreatTimer < retreatDuration)
         {
             retreatTimer += Time.deltaTime;
-            this.gameObject.transform.position = Vector3.Lerp(startPos, retreatPos, retreatTimer / retreatDuration);
+            this.transform.position = Vector3.Lerp(startPos, retreatPos, retreatTimer / retreatDuration);
             yield return null;
         }
+
         behaviorTreeScript.isEnemyPresent = false;
         currentBehavior = Behaviors.Idle;
         activeCoroutine = null;
     }
 
-    private IEnumerator DepleteHunger()
+    // Bear Actions
+    private IEnumerator BearIsHungry()
     {
         yield return new WaitForSeconds(Random.Range(20f, 40f));
         behaviorTreeScript.isEnemyPresent = true;
@@ -80,39 +95,40 @@ public class EnemyBehaviorTree : MonoBehaviour
 
     private IEnumerator Follow()
     {
-        Vector3 offScreenPos = animal.transform.position + Vector3.left * 10f;
-        this.gameObject.transform.position = offScreenPos;
-
         float followSpeed = 3f;
 
         while (true)
         {
-            Vector3 direction = (animal.transform.position - this.gameObject.transform.position).normalized;
-            this.gameObject.transform.position += direction * followSpeed * Time.deltaTime;
+            Vector3 direction = (animal.transform.position - this.transform.position).normalized;
+            this.transform.position += direction * followSpeed * Time.deltaTime;
 
-            if (Vector3.Distance(this.gameObject.transform.position, animal.transform.position) < 0.5f && Vector3.Distance(animal.transform.position, behaviorTreeScript.fort.transform.position) > 0.5f)
+            if (Vector3.Distance(this.transform.position, animal.transform.position) < 0.5f &&
+                Vector3.Distance(animal.transform.position, behaviorTreeScript.fort.transform.position) > 0.5f)
             {
                 currentBehavior = Behaviors.Feast;
+                activeCoroutine = null;
                 yield break;
             }
 
+            // If Bear reaches Fort with Animal inside, circle the Fort
             if (Vector3.Distance(animal.transform.position, behaviorTreeScript.fort.transform.position) < 0.5f)
             {
-
-                if (Vector3.Distance(this.gameObject.transform.position, animal.transform.position) < 3f)
+                if (Vector3.Distance(this.transform.position, animal.transform.position) < 3f)
                 {
-                  
                     break;
                 }
             }
 
             yield return null;
         }
+
+        // Orbit Behavior
         float circleTime = Random.Range(5f, 10f);
         float circleSpeed = 180f;
         float radius = 1.5f;
         float angle = Mathf.Atan2(
-        this.gameObject.transform.position.y - animal.transform.position.y, this.gameObject.transform.position.x - animal.transform.position.x) * Mathf.Rad2Deg;
+            this.transform.position.y - animal.transform.position.y,
+            this.transform.position.x - animal.transform.position.x) * Mathf.Rad2Deg;
 
         float t = 0f;
         while (t < circleTime)
@@ -122,20 +138,19 @@ public class EnemyBehaviorTree : MonoBehaviour
 
             float rad = angle * Mathf.Deg2Rad;
             Vector3 offset = new Vector3(Mathf.Cos(rad), Mathf.Sin(rad), 0) * radius;
-            this.gameObject.transform.position = animal.transform.position + offset;
+            this.transform.position = animal.transform.position + offset;
 
             yield return null;
         }
+
         currentBehavior = Behaviors.Retreat;
         activeCoroutine = null;
     }
 
-    
-
-    private void HubertEats() 
+    private void HerbertEats()
     {
         behaviorTreeScript.Dead();
         behaviorTreeScript.isEnemyPresent = false;
+        currentBehavior = Behaviors.Retreat;
     }
-    
 }
