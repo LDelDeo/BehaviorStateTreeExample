@@ -27,7 +27,7 @@ public class BehaviorTree : MonoBehaviour
     private GameObject home;
     private GameObject field;
     private GameObject enemy;
-    private GameObject fort;
+    public GameObject fort;
 
     [Header("Shelter Logic")]
     public bool isEnemyPresent = false;
@@ -87,7 +87,6 @@ public class BehaviorTree : MonoBehaviour
         StartCoroutine(DepleteHunger());
         StartCoroutine(DepleteThirst());
         StartCoroutine(DepleteEnergy());
-        StartCoroutine(EnemySpawner());
     }
 
     void Update()
@@ -299,79 +298,8 @@ public class BehaviorTree : MonoBehaviour
             currentBehavior = Behaviors.Dead;
         }
     }
-    //Enemy
-    private IEnumerator EnemySpawner()
-    {
-        while (true)
-        {
-            yield return new WaitForSeconds(Random.Range(20f, 40f));
 
-            isEnemyPresent = true;
-            enemy.SetActive(true);
-
-            Vector3 offScreenPos = transform.position + Vector3.left * 10f;
-            enemy.transform.position = offScreenPos;
-
-            float followSpeed = 3f;
-
-            while (true)
-            {
-                Vector3 direction = (transform.position - enemy.transform.position).normalized;
-                enemy.transform.position += direction * followSpeed * Time.deltaTime;
-
-                if (Vector3.Distance(enemy.transform.position, transform.position) < 0.5f && Vector3.Distance(transform.position, fort.transform.position) > 0.5f)
-                {
-                    currentBehavior = Behaviors.Dead;
-                    enemy.SetActive(false);
-                    isEnemyPresent = false;
-                    yield break;
-                }
-
-                if (Vector3.Distance(transform.position, fort.transform.position) < 0.5f)
-                {
-
-                    if (Vector3.Distance(enemy.transform.position, transform.position) < 3f)
-                    {
-                        break; 
-                    }
-                }
-
-                yield return null;
-            }
-
-            float circleTime = Random.Range(5f, 10f);
-            float circleSpeed = 180f;
-            float radius = 1.5f;
-            float angle = Mathf.Atan2(
-                enemy.transform.position.y - transform.position.y, enemy.transform.position.x - transform.position.x) * Mathf.Rad2Deg;
-
-            float t = 0f;
-            while (t < circleTime)
-            {
-                t += Time.deltaTime;
-                angle += circleSpeed * Time.deltaTime;
-
-                float rad = angle * Mathf.Deg2Rad;
-                Vector3 offset = new Vector3(Mathf.Cos(rad), Mathf.Sin(rad), 0) * radius;
-                enemy.transform.position = transform.position + offset;
-
-                yield return null;
-            }
-
-            Vector3 retreatPos = transform.position + Vector3.right * 10f;
-            float retreatDuration = 2f;
-            float retreatTimer = 0f;
-            Vector3 startPos = enemy.transform.position;
-
-            while (retreatTimer < retreatDuration)
-            {
-                retreatTimer += Time.deltaTime;
-                enemy.transform.position = Vector3.Lerp(startPos, retreatPos, retreatTimer / retreatDuration);
-                yield return null;
-            }
-
-            enemy.SetActive(false);
-            isEnemyPresent = false;
-        }
-    }
+    public void Dead()
+    { currentBehavior = Behaviors.Dead; }
+  
 }

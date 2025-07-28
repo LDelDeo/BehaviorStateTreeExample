@@ -1917,6 +1917,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1049997602}
   - component: {fileID: 1049997601}
+  - component: {fileID: 1049997603}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -1994,6 +1995,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1049997603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1049997600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad50c2e26da2bb44886b7345e614f2df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animal: {fileID: 1860642189}
+  currentBehavior: 0
 --- !u!1 &1093273556
 GameObject:
   m_ObjectHideFlags: 0
@@ -2881,6 +2896,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1836519066}
   m_CullTransparentMesh: 1
+--- !u!1 &1860642189 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6144757862153468451, guid: 62614f9f26dde9140857da143bb88c63, type: 3}
+  m_PrefabInstance: {fileID: 5415173493948938871}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1896550348
 GameObject:
   m_ObjectHideFlags: 0
@@ -3309,6 +3329,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 385404181621649381, guid: 62614f9f26dde9140857da143bb88c63, type: 3}
+      propertyPath: fort
+      value: 
+      objectReference: {fileID: 1830735473}
+    - target: {fileID: 385404181621649381, guid: 62614f9f26dde9140857da143bb88c63, type: 3}
       propertyPath: deadApperance
       value: 
       objectReference: {fileID: -5873250394816300020, guid: c6672dfb13118ab438612f27901567a2, type: 3}
@@ -3316,6 +3340,10 @@ PrefabInstance:
       propertyPath: aliveApperance
       value: 
       objectReference: {fileID: -3289575033469672952, guid: 752ae1bd71280ac4684acbb499f43001, type: 3}
+    - target: {fileID: 385404181621649381, guid: 62614f9f26dde9140857da143bb88c63, type: 3}
+      propertyPath: isEnemyPresent
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 385404181621649381, guid: 62614f9f26dde9140857da143bb88c63, type: 3}
       propertyPath: currentBehavior
       value: 0
