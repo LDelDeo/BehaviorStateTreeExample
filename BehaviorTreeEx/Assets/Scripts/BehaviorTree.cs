@@ -26,7 +26,6 @@ public class BehaviorTree : MonoBehaviour
     private GameObject waterSource;
     private GameObject home;
     private GameObject field;
-    private GameObject enemy;
     public GameObject fort;
 
     [Header("Shelter Logic")]
@@ -68,7 +67,6 @@ public class BehaviorTree : MonoBehaviour
         waterSource = GameObject.Find("WaterSource");
         home = GameObject.Find("Bed");
         field = GameObject.Find("Field");
-        enemy = GameObject.Find("Enemy");
         fort = GameObject.Find("Fort");
     }
 
@@ -204,6 +202,10 @@ public class BehaviorTree : MonoBehaviour
         }
     }
 
+    //Dead
+    public void Dead()
+    { currentBehavior = Behaviors.Dead; }
+
     //Hungry
     private IEnumerator DepleteHunger()
     {
@@ -298,8 +300,4 @@ public class BehaviorTree : MonoBehaviour
             currentBehavior = Behaviors.Dead;
         }
     }
-
-    public void Dead()
-    { currentBehavior = Behaviors.Dead; }
-  
 }

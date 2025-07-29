@@ -18,7 +18,7 @@ public class EnemyBehaviorTree : MonoBehaviour
 
     public enum Behaviors
     {
-        Idle, Chase, Feast, Retreat
+        Idle, Chase, Stalk, Feast, Retreat
     }
 
     public Behaviors currentBehavior;
@@ -56,6 +56,9 @@ public class EnemyBehaviorTree : MonoBehaviour
             case Behaviors.Chase:
                 activeCoroutine = StartCoroutine(Follow());
                 break;
+            case Behaviors.Stalk:
+                activeCoroutine = StartCoroutine(Circle());
+                break;
             case Behaviors.Feast:
                 HerbertEats();
                 break;
@@ -65,26 +68,8 @@ public class EnemyBehaviorTree : MonoBehaviour
         }
     }
 
-    private IEnumerator Exit()
-    {
-        Vector3 retreatPos = animal.transform.position + Vector3.right * 10f;
-        float retreatDuration = 2f;
-        float retreatTimer = 0f;
-        Vector3 startPos = this.transform.position;
-
-        while (retreatTimer < retreatDuration)
-        {
-            retreatTimer += Time.deltaTime;
-            this.transform.position = Vector3.Lerp(startPos, retreatPos, retreatTimer / retreatDuration);
-            yield return null;
-        }
-
-        behaviorTreeScript.isEnemyPresent = false;
-        currentBehavior = Behaviors.Idle;
-        activeCoroutine = null;
-    }
-
     // Bear Actions
+    //Look For Food
     private IEnumerator BearIsHungry()
     {
         yield return new WaitForSeconds(Random.Range(20f, 40f));
@@ -92,7 +77,7 @@ public class EnemyBehaviorTree : MonoBehaviour
         currentBehavior = Behaviors.Chase;
         activeCoroutine = null;
     }
-
+    //Follows food
     private IEnumerator Follow()
     {
         float followSpeed = 3f;
@@ -101,7 +86,7 @@ public class EnemyBehaviorTree : MonoBehaviour
         {
             Vector3 direction = (animal.transform.position - this.transform.position).normalized;
             this.transform.position += direction * followSpeed * Time.deltaTime;
-
+            //Bears got to eat
             if (Vector3.Distance(this.transform.position, animal.transform.position) < 0.5f &&
                 Vector3.Distance(animal.transform.position, behaviorTreeScript.fort.transform.position) > 0.5f)
             {
@@ -122,7 +107,13 @@ public class EnemyBehaviorTree : MonoBehaviour
             yield return null;
         }
 
-        // Orbit Behavior
+
+        currentBehavior = Behaviors.Stalk;
+        activeCoroutine = null;
+    }
+    //Circles Prey
+    private IEnumerator Circle()
+    {
         float circleTime = Random.Range(5f, 10f);
         float circleSpeed = 180f;
         float radius = 1.5f;
@@ -146,11 +137,30 @@ public class EnemyBehaviorTree : MonoBehaviour
         currentBehavior = Behaviors.Retreat;
         activeCoroutine = null;
     }
-
+    //Feast
     private void HerbertEats()
     {
         behaviorTreeScript.Dead();
         behaviorTreeScript.isEnemyPresent = false;
         currentBehavior = Behaviors.Retreat;
+    }
+    //Exit screen
+    private IEnumerator Exit()
+    {
+        Vector3 retreatPos = animal.transform.position + Vector3.right * 10f;
+        float retreatDuration = 2f;
+        float retreatTimer = 0f;
+        Vector3 startPos = this.transform.position;
+
+        while (retreatTimer < retreatDuration)
+        {
+            retreatTimer += Time.deltaTime;
+            this.transform.position = Vector3.Lerp(startPos, retreatPos, retreatTimer / retreatDuration);
+            yield return null;
+        }
+
+        behaviorTreeScript.isEnemyPresent = false;
+        currentBehavior = Behaviors.Idle;
+        activeCoroutine = null;
     }
 }
